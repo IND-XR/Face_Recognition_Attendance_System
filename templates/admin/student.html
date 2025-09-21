@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Students - Attendance System</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+  </head>
+  <body>
+    <div class="custom-header">
+      <div class="header-left">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="University Logo" class="header-logo">
+        <div class="header-text">
+          <div class="header-title">punjab-school-attendance-system</div>
+          <div class="header-si">punjab goverment </div>
+          <div class="header-ta">ਪੰਜਾਬ ਸਰਕਾਰ</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <img src="{{ url_for('static', filename='images/face1.png') }}" alt="Face Icon" class="header-face-icon">
+        <div class="header-system">Face Recognition Attendance System</div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+     
+      <ul><br>
+        <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+        <li>
+          <a href="{{ url_for('manage_courses') }}">Manage Courses</a>
+        </li>
+        <li>
+          <a href="{{ url_for('manage_venues') }}">Create Venue</a>
+        </li>
+        <li>
+          <a href="{{ url_for('manage_lectures') }}">Manage Lectures</a>
+        </li>
+        <li>
+          <a href="{{ url_for('manage_students') }}" class="active"
+            >Manage Students</a
+          >
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+       
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <br>
+
+      <h3 class="page-title">Overview</h3>
+
+      <section class="overview">
+        <div class="card">
+          <div class="card-content">
+            <span class="count">{{ total_students }}</span>
+            <p>Students</p>
+          </div>
+          <a href="#" class="add-small-btn" id="addStudentBtn">+ Add Student</a>
+        </div>
+      </section>
+
+      <div class="filter-controls">
+        <label for="filterFaculty" class="filter-label">Select Faculty:</label>
+        <select id="filterFaculty" class="select-box">
+          <option value="">All Faculties</option>
+        </select>
+        <label for="filterCourse" class="filter-label">Select Course:</label>
+        <select id="filterCourse" class="select-box">
+          <option value="">All Courses</option>
+        </select>
+      </div>
+
+      <section class="data-section">
+        <h3>Students</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Registration No.</th>
+              <th>Student Name</th>
+              <th>Faculty</th>
+              <th>Course</th>
+              <th>Email</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students %}
+            <tr>
+              <td>{{ student.registrationNumber }}</td>
+              <td>{{ student.firstName }} {{ student.lastName }}</td>
+              <td>{{ student.faculty }}</td>
+              <td>{{ student.courseCode }}</td>
+              <td>{{ student.email }}</td>
+              <td>
+                <button class="delete-btn" data-type="student" data-id="{{ student.registrationNumber }}" title="Delete">❌</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <!-- Add this modal HTML before the closing body tag -->
+    <div id="studentModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Add Student</h2>
+          <span class="close">&times;</span>
+        </div>
+        <form id="studentForm">
+          <div class="form-group">
+            <label for="faculty">Faculty</label>
+            <select id="faculty" name="faculty" required>
+              <option value="">Select Faculty</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="course">Course</label>
+            <select id="course" name="course" required>
+              <option value="">Select Course</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <input
+              type="text"
+              id="firstName"
+              name="firstName"
+              placeholder="First Name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <input
+              type="text"
+              id="lastName"
+              name="lastName"
+              placeholder="Last Name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <input
+              type="email"
+              id="emailAddress"
+              name="emailAddress"
+              placeholder="Email Address"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <input
+              type="text"
+              id="registrationNumber"
+              name="registrationNumber"
+              placeholder="Registration Number"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <button type="button" id="takeImageBtn" class="take-image-btn">Open Camera</button>
+            <div id="imagePreview" style="display: none; margin-top: 10px;">
+              <div id="capturedImages" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+            </div>
+          </div>
+          <button type="submit" class="save-btn">Save Student</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add this JavaScript -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById("studentModal");
+        const facultySelect = document.getElementById('faculty');
+        const courseSelect = document.getElementById('course');
+        const addStudentBtn = document.getElementById("addStudentBtn");
+        const takeImageBtn = document.getElementById("takeImageBtn");
+        const imagePreview = document.getElementById("imagePreview");
+        const capturedImages = document.getElementById("capturedImages");
+        
+        // Function to load faculties
+        function loadFaculties() {
+          console.log("Loading faculties...");
+          facultySelect.innerHTML = '<option value="">Select Faculty</option>';
+          
+          fetch('/get_faculties')
+            .then(response => response.json())
+            .then(faculties => {
+              console.log('Received faculties:', faculties);
+              if (faculties && faculties.length > 0) {
+                faculties.forEach(faculty => {
+                  const option = document.createElement('option');
+                  option.value = faculty.facultyCode;
+                  option.textContent = faculty.facultyName;
+                  facultySelect.appendChild(option);
+                });
+              } else {
+                const option = document.createElement('option');
+                option.value = "";
+                option.textContent = "No faculties available";
+                facultySelect.appendChild(option);
+              }
+            })
+            .catch(error => {
+              console.error('Error loading faculties:', error);
+              facultySelect.innerHTML = '<option value="">Error loading faculties</option>';
+            });
+        }
+
+        // Function to load courses based on selected faculty
+        function loadCoursesByFaculty(facultyCode) {
+          console.log('Loading courses for faculty:', facultyCode);
+          courseSelect.innerHTML = '<option value="">Loading courses...</option>';
+          
+          fetch(`/get_courses_by_faculty/${facultyCode}`)
+            .then(response => response.json())
+            .then(courses => {
+              console.log('Received courses:', courses);
+              courseSelect.innerHTML = '<option value="">Select Course</option>';
+              
+              if (Array.isArray(courses) && courses.length > 0) {
+                courses.forEach(course => {
+                  const option = document.createElement('option');
+                  option.value = course.courseCode;
+                  option.textContent = `${course.name} (${course.courseCode})`;
+                  courseSelect.appendChild(option);
+                });
+              } else {
+                const option = document.createElement('option');
+                option.value = "";
+                option.textContent = "No courses available for this faculty";
+                courseSelect.appendChild(option);
+              }
+            })
+            .catch(error => {
+              console.error('Error loading courses:', error);
+              courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+            });
+        }
+
+        // Add event listener for faculty selection
+        facultySelect.addEventListener('change', function() {
+          const selectedFacultyCode = this.value;
+          console.log('Selected faculty:', selectedFacultyCode);
+          
+          if (selectedFacultyCode) {
+            loadCoursesByFaculty(selectedFacultyCode);
+          } else {
+            courseSelect.innerHTML = '<option value="">Select Faculty First</option>';
+          }
+        });
+
+        // Show modal and load faculties when Add Student button is clicked
+        if (addStudentBtn) {
+          addStudentBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            modal.style.display = "flex";
+            loadFaculties();
+          });
+        }
+
+        // Close modal when X is clicked
+        const closeBtn = document.querySelector(".close");
+        closeBtn.addEventListener("click", function () {
+          modal.style.display = "none";
+          document.getElementById("studentForm").reset();
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener("click", function (event) {
+          if (event.target === modal) {
+            modal.style.display = "none";
+            document.getElementById("studentForm").reset();
+          }
+        });
+
+        // Handle form submission
+        document.getElementById("studentForm").addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const selectedCourse = document.getElementById("course").value;
+          console.log("Selected course:", selectedCourse); // Debug log
+
+          const formData = {
+            firstName: document.getElementById("firstName").value,
+            lastName: document.getElementById("lastName").value,
+            email: document.getElementById("emailAddress").value,
+            registrationNumber: document.getElementById("registrationNumber").value,
+            courseId: selectedCourse,
+            faculty: document.getElementById("faculty").value  // Add faculty
+          };
+
+          console.log("Sending student data:", formData); // Debug log
+
+          fetch("/add_student", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData)
+          })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                alert("Student added successfully!");
+                modal.style.display = "none";
+                document.getElementById("studentForm").reset();
+                location.reload();
+              } else {
+                alert("Error: " + (data.message || "Failed to add student"));
+              }
+            })
+            .catch(error => {
+              console.error("Error:", error);
+              alert("Error adding student. Please try again.");
+            });
+        });
+
+        // Add event listener for Take Image button
+        takeImageBtn.addEventListener('click', function() {
+          const faculty = document.getElementById('faculty').value;
+          const course = document.getElementById('course').value;
+          const regNumber = document.getElementById('registrationNumber').value;
+
+          if (!faculty || !course || !regNumber) {
+            alert('Please fill in Faculty, Course, and Registration Number before taking images');
+            return;
+          }
+
+          // Disable button during capture
+          takeImageBtn.disabled = true;
+          takeImageBtn.textContent = 'Camera Active...';
+
+          // Call the capture image endpoint
+          fetch('/capture_student_image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              faculty: faculty,
+              course: course,
+              reg_number: regNumber
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              // Clear previous images
+              capturedImages.innerHTML = '';
+              
+              // Show all captured images
+              data.image_paths.forEach((path, index) => {
+                const imgContainer = document.createElement('div');
+                imgContainer.style.position = 'relative';
+                
+                const img = document.createElement('img');
+                img.src = path;
+                img.style.maxWidth = '150px';
+                img.style.maxHeight = '150px';
+                
+                const label = document.createElement('div');
+                label.textContent = `Image ${index + 1}`;
+                label.style.textAlign = 'center';
+                label.style.marginTop = '5px';
+                
+                imgContainer.appendChild(img);
+                imgContainer.appendChild(label);
+                capturedImages.appendChild(imgContainer);
+              });
+              
+              imagePreview.style.display = 'block';
+              alert('All images captured successfully!');
+            } else {
+              alert(data.message);
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Error capturing images. Please try again.');
+          })
+          .finally(() => {
+            // Re-enable button
+            takeImageBtn.disabled = false;
+            takeImageBtn.textContent = 'Open Camera';
+          });
+        });
+
+        document.addEventListener('click', function(e) {
+          if (e.target.closest('.delete-btn')) {
+            const btn = e.target.closest('.delete-btn');
+            const type = btn.getAttribute('data-type');
+            const id = btn.getAttribute('data-id');
+            let url, payload;
+            if (type === 'student') {
+              url = '/delete_student';
+              payload = { registrationNumber: id };
+            } else if (type === 'room') {
+              url = '/delete_room';
+              payload = { id: id };
+            } else if (type === 'course') {
+              url = '/delete_course';
+              payload = { id: id };
+            } else if (type === 'unit') {
+              url = '/delete_unit';
+              payload = { unitCode: id };
+            } else if (type === 'faculty') {
+              url = '/delete_faculty';
+              payload = { code: id };
+            } else {
+              return;
+            }
+            if (!confirm('Are you sure you want to delete this item?')) return;
+            fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                btn.closest('tr').remove();
+              } else {
+                alert('Delete failed: ' + (data.message || 'Unknown error'));
+              }
+            });
+          }
+        });
+
+        // --- Filtering Controls ---
+        const filterFaculty = document.getElementById('filterFaculty');
+        const filterCourse = document.getElementById('filterCourse');
+        const studentsTableBody = document.querySelector('tbody');
+
+        // Populate faculty dropdown
+        fetch('/get_faculties')
+          .then(res => res.json())
+          .then(faculties => {
+            faculties.forEach(faculty => {
+              const opt = document.createElement('option');
+              opt.value = faculty.facultyCode;
+              opt.textContent = faculty.facultyName;
+              filterFaculty.appendChild(opt);
+            });
+          });
+
+        // Populate course dropdown based on selected faculty
+        filterFaculty.addEventListener('change', function() {
+          const facultyCode = this.value;
+          filterCourse.innerHTML = '<option value="">All Courses</option>';
+          if (!facultyCode) {
+            // If 'All Faculties' is selected, show all students and reset course dropdown
+            filterStudents();
+            return;
+          }
+          fetch(`/get_courses_by_faculty/${facultyCode}`)
+            .then(res => res.json())
+            .then(courses => {
+              courses.forEach(course => {
+                const opt = document.createElement('option');
+                opt.value = course.courseCode;
+                opt.textContent = course.name;
+                filterCourse.appendChild(opt);
+              });
+            });
+          filterStudents();
+        });
+
+        // Filter students when course changes
+        filterCourse.addEventListener('change', filterStudents);
+
+        // Filter students in the table
+        function filterStudents() {
+          const faculty = filterFaculty.value;
+          const course = filterCourse.value;
+          const rows = studentsTableBody.querySelectorAll('tr');
+          rows.forEach(row => {
+            const rowFaculty = row.children[2]?.textContent.trim();
+            const rowCourse = row.children[3]?.textContent.trim();
+            let show = true;
+            if (faculty && rowFaculty !== faculty) show = false;
+            if (course && rowCourse !== course) show = false;
+            row.style.display = show ? '' : 'none';
+          });
+          // If 'All Faculties' is selected, reset course dropdown
+          if (!faculty) {
+            filterCourse.innerHTML = '<option value="">All Courses</option>';
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

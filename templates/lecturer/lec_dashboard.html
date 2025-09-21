@@ -1,0 +1,618 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lecturer Dashboard - Attendance System</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+  </head>
+  <body>
+    <div class="custom-header">
+      <div class="header-left">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="University Logo" class="header-logo">
+        <div class="header-text">
+          <div class="header-title">punjab-school-attendance-system</div>
+          <div class="header-si">punjab goverment </div>
+          <div class="header-ta">ਪੰਜਾਬ ਸਰਕਾਰ</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <img src="{{ url_for('static', filename='images/face1.png') }}" alt="Face Icon" class="header-face-icon">
+        <div class="header-system">Face Recognition Attendance System</div>
+      </div>
+    </div>
+    <div class="sidebar">
+        
+      <ul><br>
+          <li><a href="{{ url_for('lec_dashboard') }}" class="active">Take Attendance</a></li>
+          <li><a href="{{ url_for('view_attendance') }}">View Attendance</a></li>
+          <li><a href="{{ url_for('lec_student') }}">Students</a></li>
+          <li><a href="{{ url_for('download_attendance') }}" >Download Attendance</a></li>
+      </ul>
+      <div class="sidebar-footer">
+          <a href="{{ url_for('logout') }}">Logout</a>
+      </div>
+  </div>
+    </div>
+
+    <div class="main-content">
+    
+
+      <div class="attendance-section">
+        <h3>Take Attendance</h3>
+        <p class="instruction">
+          Please select Faculty, Course, unit, and venue first. Before Launching Facial
+          Recognition
+        </p>
+
+        <div class="selection-controls">
+          <select class="select-box" id="facultySelect">
+            <option value="" selected>Select Faculty</option>
+            {% if faculties %} {% for faculty in faculties %}
+              <option value="{{ faculty.facultyCode }}">{{ faculty.facultyName }}</option>
+            {% endfor %} {% endif %}
+          </select>
+
+          <select class="select-box" id="courseSelect" disabled>
+            <option value="">Select Course</option>
+          </select>
+
+          <select class="select-box" id="unitSelect" disabled>
+            <option value="">Select Unit</option>
+          </select>
+
+          <select class="select-box" id="venueSelect" disabled>
+            <option value="">Select Venue</option>
+            {% if lecturer.venues %} {% for venue in lecturer.venues %}
+            <option value="{{ venue.id }}">{{ venue.className }}</option>
+            {% endfor %} {% endif %}
+          </select>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn launch-btn" disabled>
+            Launch Facial Recognition
+          </button>
+          <button class="btn end-btn" disabled>END Attendance Taking</button>
+          <button id="exportExcelBtn" class="btn" style="display:none; margin-left:10px;">Export Attendance as Excel</button>
+        </div>
+
+        <!-- Camera preview and capture section -->
+       
+
+        <div
+          class="student-data-section"
+          id="studentDataSection"
+          style="display: none"
+        >
+          <h3>Student List</h3>
+          <table class="student-table">
+            <thead>
+              <tr>
+                <th>Registration No</th>
+                <th>Name</th>
+                <th>Course</th>
+                <th>Unit</th>
+                <th>Venue</th>
+                <th>Attendance</th>
+                
+              </tr>
+            </thead>
+            <tbody id="studentTableBody">
+              <!-- Student data will be inserted here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wait Modal -->
+    <div id="waitModal" class="wait-modal">
+  <div class="wait-modal-content">
+    <div class="spinner">
+      <svg width="50" height="50" viewBox="0 0 50 50">
+        <circle cx="25" cy="25" r="20" stroke="#007bff" stroke-width="5" fill="none" stroke-linecap="round">
+          <animateTransform attributeName="transform" type="rotate" dur="1s" repeatCount="indefinite" from="0 25 25" to="360 25 25" />
+        </circle>
+      </svg>
+    </div>
+    <h3>Please wait...</h3>
+    <p>Loading and encoding student images. This may take a moment.</p>
+  </div>
+</div>
+
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById('facultySelect').selectedIndex = 0;
+        const facultySelect = document.getElementById('facultySelect');
+        const courseSelect = document.getElementById('courseSelect');
+        const unitSelect = document.getElementById('unitSelect');
+        const venueSelect = document.getElementById('venueSelect');
+
+        facultySelect.addEventListener('change', function() {
+          const facultyCode = this.value;
+          // Reset course, unit, and venue dropdowns
+          courseSelect.innerHTML = '<option value="">Select Course</option>';
+          unitSelect.innerHTML = '<option value="">Select Unit</option>';
+          venueSelect.innerHTML = '<option value="">Select Venue</option>';
+          unitSelect.disabled = true;
+          venueSelect.disabled = true;
+
+          if (!facultyCode) {
+            courseSelect.disabled = true;
+            return;
+          }
+
+          // Fetch courses for selected faculty
+          fetch(`/get_courses_by_faculty/${facultyCode}`)
+            .then(response => response.json())
+            .then(courses => {
+              if (courses && courses.length > 0) {
+                courses.forEach(course => {
+                  const option = document.createElement('option');
+                  option.value = course.id;
+                  option.textContent = course.name;
+                  courseSelect.appendChild(option);
+                });
+                courseSelect.disabled = false;
+              } else {
+                courseSelect.disabled = true;
+              }
+            });
+        });
+
+        const launchBtn = document.querySelector(".launch-btn");
+        const endBtn = document.querySelector(".end-btn");
+        const studentDataSection =
+          document.getElementById("studentDataSection");
+        const studentTableBody = document.getElementById("studentTableBody");
+        const exportExcelBtn = document.getElementById("exportExcelBtn");
+
+        let attendanceInProgress = false;
+        let attendanceIntervalId = null;
+
+        // Utility function to set controls enabled/disabled
+        function setAttendanceControls(isTakingAttendance) {
+          courseSelect.disabled = isTakingAttendance;
+          unitSelect.disabled = isTakingAttendance;
+          venueSelect.disabled = isTakingAttendance;
+          launchBtn.disabled = isTakingAttendance || !courseSelect.value || !unitSelect.value || !venueSelect.value;
+          endBtn.disabled = !isTakingAttendance;
+        }
+
+        // Utility function to disable only dropdowns and launch button for attendance taking
+        function disableForAttendanceTaking() {
+          courseSelect.disabled = true;
+          unitSelect.disabled = true;
+          venueSelect.disabled = true;
+          launchBtn.disabled = true;
+          endBtn.disabled = false; // Only END button is enabled
+        }
+
+        // Helper to check if all selections are made
+        function allSelectionsMade() {
+          return courseSelect.value && unitSelect.value && venueSelect.value;
+        }
+
+        // Update launch button state on any selection change
+        function updateLaunchBtnState() {
+          launchBtn.disabled = !allSelectionsMade() || courseSelect.disabled || unitSelect.disabled || venueSelect.disabled;
+        }
+
+        // Utility function to disable all controls
+        function disableAllAttendanceControls() {
+          attendanceInProgress = true;
+          courseSelect.disabled = true;
+          unitSelect.disabled = true;
+          venueSelect.disabled = true;
+          launchBtn.disabled = true;
+          endBtn.disabled = false;
+        }
+
+        // Utility function to enable all controls (except launch, which depends on selections)
+        function enableAllAttendanceControls() {
+          attendanceInProgress = false;
+          courseSelect.disabled = false;
+          unitSelect.disabled = false;
+          venueSelect.disabled = false;
+          launchBtn.disabled = !allSelectionsMade();
+          endBtn.disabled = true;
+        }
+
+        // Course selection change handler
+        courseSelect.addEventListener("change", function () {
+          const courseId = this.value;
+          console.log("Selected course:", courseId);
+
+          // Reset unit and venue selections
+          unitSelect.innerHTML = '<option value="">Select Unit</option>';
+          unitSelect.disabled = true;
+          venueSelect.innerHTML = '<option value="">Select Venue</option>';
+          venueSelect.disabled = true;
+
+          if (!courseId) {
+            if (studentDataSection) {
+              studentDataSection.style.display = "none";
+            }
+            return;
+          }
+
+          // Fetch students for selected course
+          fetch(`/get_students_by_course/${courseId}`)
+            .then((response) => response.json())
+            .then((students) => {
+              console.log("Received students:", students);
+
+              if (studentTableBody) {
+                studentTableBody.innerHTML = "";
+
+                if (students && students.length > 0) {
+                  studentDataSection.style.display = "block";
+                  students.forEach((student) => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                      <td>${student.regNo}</td>
+                      <td>${student.firstName} ${student.lastName}</td>
+                      <td>${student.courseName}</td>
+                      <td>${student.unitName || '-'}</td>
+                      <td>${venueSelect.options[venueSelect.selectedIndex]?.text || '-'}</td>
+                      <td data-regno="${student.regNo.trim().toUpperCase()}">Absent</td>
+                     
+                    `;
+                    studentTableBody.appendChild(row);
+                  });
+                } else {
+                  const row = document.createElement("tr");
+                  row.innerHTML =
+                    '<td colspan="7" class="no-data">No students found for this course</td>';
+                  studentTableBody.appendChild(row);
+                }
+              }
+            })
+            .catch((error) => {
+              console.error("Error loading students:", error);
+              if (studentTableBody) {
+                studentTableBody.innerHTML =
+                  '<tr><td colspan="7" class="error">Error loading students</td></tr>';
+              }
+            });
+
+          // Fetch units for selected course
+          fetch(`/get_units_by_course/${courseId}`)
+            .then((response) => response.json())
+            .then((units) => {
+              if (units && units.length > 0) {
+                units.forEach((unit) => {
+                  const option = document.createElement("option");
+                  option.value = unit.id;
+                  option.textContent = `${unit.unitCode} - ${unit.name}`;
+                  unitSelect.appendChild(option);
+                });
+                unitSelect.disabled = false;
+              }
+            })
+            .catch((error) => console.error("Error loading units:", error));
+
+          // Fetch venues for selected course
+          fetch(`/get_venues_by_course/${courseId}`)
+            .then((response) => response.json())
+            .then((venues) => {
+              venueSelect.innerHTML = '<option value="">Select Venue</option>';
+              if (venues && venues.length > 0) {
+                venues.forEach((venue) => {
+                  const option = document.createElement("option");
+                  option.value = venue.id;
+                  option.textContent = venue.className;
+                  venueSelect.appendChild(option);
+                });
+                // Only enable if a unit is also selected
+                venueSelect.disabled = !unitSelect.value;
+              } else {
+                venueSelect.disabled = true;
+              }
+            })
+            .catch((error) => {
+              venueSelect.innerHTML = '<option value="">Select Venue</option>';
+              venueSelect.disabled = true;
+              console.error("Error loading venues:", error);
+            });
+
+          updateLaunchBtnState();
+        });
+
+        // Unit selection change handler
+        unitSelect.addEventListener("change", function () {
+          const unitId = this.value;
+          console.log("Selected unit:", unitId);
+
+          // Enable/disable venue select and launch button
+          venueSelect.disabled = !unitId || venueSelect.options.length <= 1;
+          launchBtn.disabled = !unitId || !venueSelect.value;
+
+          // Update the unit column in existing student rows
+          const selectedUnitText = unitId
+            ? this.options[this.selectedIndex].text
+            : "-";
+          const studentRows = studentTableBody.getElementsByTagName("tr");
+
+          Array.from(studentRows).forEach((row) => {
+            // Only update if it's not an error or no-data row
+            if (
+              !row.querySelector(".error") &&
+              !row.querySelector(".no-data")
+            ) {
+              // Update the unit cell (4th column)
+              const unitCell = row.cells[3];
+              if (unitCell) {
+                unitCell.textContent = selectedUnitText;
+              }
+            }
+          });
+
+          updateLaunchBtnState();
+        });
+
+        // Update the venue selection handler
+        venueSelect.addEventListener("change", function () {
+          const venueId = this.value;
+          console.log("Selected venue:", venueId);
+
+          // Enable/disable launch button
+          launchBtn.disabled = !venueId;
+
+          // Get the selected venue text
+          const selectedVenueText = venueId
+            ? this.options[this.selectedIndex].text
+            : "-";
+          console.log("Selected venue text:", selectedVenueText); // Debug log
+
+          // Get all student rows and update venue
+          const studentRows = studentTableBody.getElementsByTagName("tr");
+
+          Array.from(studentRows).forEach((row) => {
+            // Make sure row has the right number of cells and isn't an error message
+            if (
+              row.cells.length >= 5 &&
+              !row.querySelector(".error") &&
+              !row.querySelector(".no-data")
+            ) {
+              // Update the venue cell (5th column)
+              const venueCell = row.cells[4]; // Index 4 is the venue column
+              if (venueCell) {
+                venueCell.textContent = selectedVenueText;
+                console.log("Updated venue cell:", venueCell.textContent); // Debug log
+              }
+            }
+          });
+
+          updateLaunchBtnState();
+        });
+
+        // Function to fetch and display students
+        function fetchAndDisplayStudents() {
+          const courseId = courseSelect.value;
+          const unitId = unitSelect.value;
+
+          if (!courseId || !unitId) return;
+
+          fetch(
+            `/get_students_by_course_unit?course=${courseId}&unit=${unitId}`
+          )
+            .then((response) => response.json())
+            .then((data) => {
+              if (studentTableBody) {
+                studentTableBody.innerHTML = "";
+
+                if (data.length > 0) {
+                  studentDataSection.style.display = "block";
+                  data.forEach((student) => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                      <td>${student.regNo}</td>
+                      <td>${student.firstName} ${student.lastName}</td>
+                      <td>${student.courseName}</td>
+                      <td>${student.unitName}</td>
+                      <td>${
+                        venueSelect.options[venueSelect.selectedIndex].text ||
+                        "-"
+                      }</td>
+                      <td data-regno="${student.regNo.trim().toUpperCase()}">Absent</td>
+                      
+                    `;
+                    studentTableBody.appendChild(row);
+                  });
+                } else {
+                  studentDataSection.style.display = "block";
+                  const row = document.createElement("tr");
+                  row.innerHTML =
+                    '<td colspan="7" class="no-data">No students found for this course and unit</td>';
+                  studentTableBody.appendChild(row);
+                }
+              }
+            })
+            .catch((error) => {
+              console.error("Error fetching students:", error);
+              if (studentTableBody) {
+                studentTableBody.innerHTML =
+                  '<tr><td colspan="7" class="error">Error loading students</td></tr>';
+              }
+            });
+        }
+
+        // Function to fetch and update attendance status
+        // function updateAttendanceStatus(course_id, unit_id, venue_id) {
+        //     fetch(`http://127.0.0.1:5000/get_attendance_status?course_id=${course_id}&unit_id=${unit_id}&venue_id=${venue_id}`,{
+        //       credentials:"include" //send cookies/session
+        //     })
+
+        //     // fetch(`${BASE_URL}/get_attendance_status?course_id=${course_id}&unit_id=${unit_id}&venue_id=${venue_id}`)
+        //     // console.log(`${BASE_URL}/get_attendance_status?course_id=${course_id}&unit_id=${unit_id}&venue_id=${venue_id}`)
+
+        //         .then(response => response.json())
+        //         .then(attendanceData => {
+        //             // attendanceData is a mapping: { regNo: "Present"/"Absent" }
+        //             for (const regNo in attendanceData) {
+        //                 const status = attendanceData[regNo];
+        //                 const attendanceCell = studentTableBody.querySelector(`td[data-regno="${regNo.trim().toUpperCase()}"]`);
+        //                 if (attendanceCell) {
+        //                     attendanceCell.textContent = status;
+        //                     if (status === 'Present') {
+        //                         attendanceCell.style.color = 'green';
+        //                         attendanceCell.style.fontWeight = 'bold';
+        //                     } else {
+        //                         attendanceCell.style.color = '';
+        //                         attendanceCell.style.fontWeight = '';
+        //                     }
+        //                 }
+        //             }
+        //         });
+        // }
+
+        const BASE_URL = "https://127.0.0.1:5000";
+
+        function updateAttendanceStatus(course_id, unit_id, venue_id) {
+    fetch(`${BASE_URL}/get_attendance_status?course_id=${course_id}&unit_id=${unit_id}&venue_id=${venue_id}`, {
+        credentials: "include" // send cookies/session
+    })
+    .then(response => response.json())
+    .then(attendanceData => {
+        for (const regNo in attendanceData) {
+            const status = attendanceData[regNo];
+            const attendanceCell = studentTableBody.querySelector(`td[data-regno="${regNo.trim().toUpperCase()}"]`);
+            if (attendanceCell) {
+                attendanceCell.textContent = status;
+                if (status === 'Present') {
+                    attendanceCell.style.color = 'green';
+                    attendanceCell.style.fontWeight = 'bold';
+                } else {
+                    attendanceCell.style.color = '';
+                    attendanceCell.style.fontWeight = '';
+                }
+            }
+        }
+    })
+    .catch(err => console.error("Error fetching attendance:", err));
+}
+
+
+        // Function to start polling for attendance updates
+        function startAttendancePolling(course_id, unit_id, venue_id) {
+            if (attendanceIntervalId) clearInterval(attendanceIntervalId);
+            attendanceIntervalId = setInterval(() => {
+                updateAttendanceStatus(course_id, unit_id, venue_id);
+            }, 2000); // Poll every 2 seconds
+        }
+
+        // Function to stop polling
+        function stopAttendancePolling() {
+            if (attendanceIntervalId) {
+                clearInterval(attendanceIntervalId);
+                attendanceIntervalId = null;
+            }
+        }
+
+        // Event listeners for select boxes to fetch and display students
+        courseSelect.addEventListener("change", fetchAndDisplayStudents);
+        unitSelect.addEventListener("change", fetchAndDisplayStudents);
+        venueSelect.addEventListener("change", fetchAndDisplayStudents);
+
+        // On Launch button click
+        launchBtn.addEventListener("click", function () {
+            // Disable ALL controls immediately
+            disableAllAttendanceControls();
+
+            const course_id = courseSelect.value;
+            const unit_id = unitSelect.value;
+            const venue_id = venueSelect.value;
+
+            // Show wait modal
+            document.getElementById('waitModal').style.display = 'flex';
+
+            // Launch Attendance.py using subprocess
+            fetch("/launch_attendance", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                course_id: course_id,
+                unit_id: unit_id,
+                venue_id: venue_id,
+              }),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // Hide wait modal on success BEFORE showing alert
+                  document.getElementById('waitModal').style.display = 'none';
+                  alert("Facial Recognition System Launched!");
+                  startAttendancePolling(course_id, unit_id, venue_id);
+                  // Enable only END button for ending session
+                  endBtn.disabled = false;
+                  showExportButton();
+                } else {
+                  // Hide wait modal on failure
+                  document.getElementById('waitModal').style.display = 'none';
+                  alert("Failed to launch: " + (data.error || "Unknown error"));
+                  // Re-enable all controls on failure
+                  enableAllAttendanceControls();
+                }
+              })
+              .catch((error) => {
+                console.error("Error:", error);
+                // Hide wait modal on error
+                document.getElementById('waitModal').style.display = 'none';
+                alert("Failed to launch facial recognition system");
+                // Re-enable all controls on error
+                enableAllAttendanceControls();
+              });
+          });
+        
+        // On END Attendance Taking button click
+        endBtn.addEventListener("click", function() {
+            fetch('/stop_attendance', { method: 'POST' })
+              .then(res => res.json())
+              .then(data => {
+                if (data.success) {
+                  stopAttendancePolling();
+                  enableAllAttendanceControls();
+                  updateLaunchBtnState();
+                  showExportButton();
+                } else {
+                  alert('Failed to stop attendance: ' + data.message);
+                }
+              })
+              .catch((error) => {
+                alert('Error stopping attendance: ' + error);
+              });
+        });
+
+        // Initial state: Enable controls, but launch only if all selections made
+        setAttendanceControls(false);
+        updateLaunchBtnState();
+
+        // After attendance is launched or ended, show the button
+        function showExportButton() {
+          exportExcelBtn.style.display = "inline-block";
+        }
+
+        // Export Excel button click handler
+        exportExcelBtn.addEventListener("click", function() {
+            const course_id = courseSelect.value;
+            const unit_id = unitSelect.value;
+            const venue_id = venueSelect.value;
+            if (!course_id || !unit_id || !venue_id) {
+                alert("Please select course, unit, and venue.");
+                return;
+            }
+            const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+            window.open(`/export_attendance_excel?course_id=${course_id}&unit_id=${unit_id}&venue_id=${venue_id}&date=${today}`, '_blank');
+        });
+
+        // Initial load (optional: if you want to show students on page load if selections are already made)
+        // fetchAndDisplayStudents();
+      });
+    </script>
+  </body>
+</html>

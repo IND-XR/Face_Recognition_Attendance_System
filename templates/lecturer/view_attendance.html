@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>View Attendance - Attendance MS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+    <div class="custom-header">
+        <div class="header-left">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="University Logo" class="header-logo">
+          <div class="header-text">
+            <div class="header-title">punjab-school-attendance-system</div>
+            <div class="header-si">punjab goverment</div>
+            <div class="header-ta">ਪੰਜਾਬ ਸਰਕਾਰ</div>
+          </div>
+        </div>
+        <div class="header-right">
+          <img src="{{ url_for('static', filename='images/face1.png') }}" alt="Face Icon" class="header-face-icon">
+          <div class="header-system">Face Recognition Attendance System</div>
+        </div>
+      </div>
+      <div class="sidebar">
+        
+        <ul><br>
+            <li><a href="{{ url_for('lec_dashboard') }}">Take Attendance</a></li>
+            <li><a href="{{ url_for('view_attendance') }}" class="active">View Attendance</a></li>
+            <li><a href="{{ url_for('lec_student') }}">Students</a></li>
+            <li><a href="{{ url_for('download_attendance') }}" >Download Attendance</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
+    <div class="main-content">
+        
+        <div class="attendance-section">
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                <select id="courseSelect" class="select-box" style="min-width:200px;">
+                    <option value="">Select Course</option>
+                </select>
+                <select id="unitSelect" class="select-box" style="min-width:200px;">
+                    <option value="">Select Unit</option>
+                </select>
+                <select id="dateSelect" class="select-box" style="min-width:200px;">
+                    <option value="">Select Date</option>
+                </select>
+                <button id="exportBtn" class="btn">Export Attendance As Excel</button>
+            </div>
+            <h2>Attendance Preview</h2>
+            <table class="student-table">
+                <thead>
+                    <tr>
+                        <th>Registration No</th>
+                        <th>Name</th>
+                      
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceTableBody">
+                    <tr><td colspan="4" class="no-data">Select course and unit to view attendance</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        // Populate courses dropdown
+        fetch('/get_courses_list')
+            .then(res => res.json())
+            .then(courses => {
+                const courseSelect = document.getElementById('courseSelect');
+                courses.forEach(course => {
+                    const opt = document.createElement('option');
+                    opt.value = course.id;
+                    opt.textContent = course.name;
+                    courseSelect.appendChild(opt);
+                });
+            });
+
+        // Populate units when course changes
+        document.getElementById('courseSelect').addEventListener('change', function() {
+            const courseId = this.value;
+            const unitSelect = document.getElementById('unitSelect');
+            unitSelect.innerHTML = '<option value=\"\">Select Unit</option>';
+            if (!courseId) return;
+            fetch(`/get_units_by_course/${courseId}`)
+                .then(res => res.json())
+                .then(units => {
+                    units.forEach(unit => {
+                        const opt = document.createElement('option');
+                        opt.value = unit.id;
+                        opt.textContent = unit.name;
+                        unitSelect.appendChild(opt);
+                    });
+                });
+        });
+
+        // Populate dates when unit changes
+        document.getElementById('unitSelect').addEventListener('change', function() {
+            const courseId = document.getElementById('courseSelect').value;
+            const unitId = this.value;
+            const dateSelect = document.getElementById('dateSelect');
+            dateSelect.innerHTML = '<option value="">Select Date</option>';
+            if (!courseId || !unitId) return;
+            fetch(`/get_lecture_dates?course_id=${courseId}&unit_id=${unitId}`)
+                .then(res => res.json())
+                .then(dates => {
+                    dates.forEach(date => {
+                        const opt = document.createElement('option');
+                        opt.value = date;
+                        opt.textContent = date;
+                        dateSelect.appendChild(opt);
+                    });
+                });
+        });
+
+        // Fetch and display attendance when date changes
+        document.getElementById('dateSelect').addEventListener('change', function() {
+            const courseId = document.getElementById('courseSelect').value;
+            const unitId = document.getElementById('unitSelect').value;
+            const date = this.value;
+            const tbody = document.getElementById('attendanceTableBody');
+            tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+            if (!courseId || !unitId || !date) {
+                tbody.innerHTML = '<tr><td colspan="4" class="no-data">Select course, unit, and date to view attendance</td></tr>';
+                return;
+            }
+            fetch(`/get_attendance_records?course_id=${courseId}&unit_id=${unitId}&date=${date}`)
+                .then(res => res.json())
+                .then(records => {
+                    if (!records.length) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="no-data">No attendance records found.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = '';
+                    records.forEach(row => {
+                        tbody.innerHTML += `<tr>
+                            <td>${row.registrationNumber}</td>
+                            <td>${row.name || ''}</td>
+                            <td>${row.attendanceStatus}</td>
+                        </tr>`;
+                    });
+                });
+        });
+
+        // Export button (optional: implement backend for Excel export)
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            const course_id = document.getElementById('courseSelect').value;
+            const unit_id = document.getElementById('unitSelect').value;
+            const date = document.getElementById('dateSelect').value; // or whatever your date input's id is
+
+            if (!course_id || !unit_id || !date) {
+                alert("Please select course, unit, and date.");
+                return;
+            }
+            // Use the new endpoint for view attendance export
+            window.open(`/export_view_attendance_excel?course_id=${course_id}&unit_id=${unit_id}&date=${date}`, '_blank');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Lectures - Attendance System</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+  </head>
+  <body>
+    <div class="custom-header">
+      <div class="header-left">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="University Logo" class="header-logo">
+        <div class="header-text">
+          <div class="header-title">punjab-school-attendance-system</div>
+          <div class="header-si">punjab goverment </div>
+          <div class="header-ta">ਪੰਜਾਬ ਸਰਕਾਰ</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <img src="{{ url_for('static', filename='images/face1.png') }}" alt="Face Icon" class="header-face-icon">
+        <div class="header-system">Face Recognition Attendance System</div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      
+      <ul><br>
+        <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+        <li>
+          <a href="{{ url_for('manage_courses') }}">Manage Courses</a>
+        </li>
+        <li>
+          <a href="{{ url_for('manage_venues') }}">Create Venue</a>
+        </li>
+        <li>
+          <a href="{{ url_for('manage_lectures') }}" class="active"
+            >Manage Lectures</a
+          >
+        </li>
+        <li>
+          <a href="{{ url_for('manage_students') }}">Manage Students</a>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+      
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <br>
+
+      <h3 class="page-title">Overview</h3>
+
+      <section class="overview">
+        <div class="card">
+          <div class="card-content">
+            <span class="count">{{ total_lecturers }}</span>
+            <p>Lecturers</p>
+          </div>
+          <a href="#" class="add-small-btn" id="addLecturerBtn"
+            >+ Add Lecturer</a
+          >
+        </div>
+      </section>
+
+      <section class="data-section">
+        <div class="section-header">
+          <h3>Lecturers</h3>
+    
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone No.</th>
+              <th>Faculty</th>
+              <th>Course</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if lecturers %}
+              {% for lecturer in lecturers %}
+              <tr>
+                <td>{{ lecturer.firstName }} {{ lecturer.lastName }}</td>
+                <td>{{ lecturer.emailAddress }}</td>
+                <td>{{ lecturer.phoneNo }}</td>
+                <td>{{ lecturer.facultyCode }}</td>
+                <td>{{ lecturer.course }}</td>
+                <td>
+                  <div class="action-buttons">
+                    
+                    <button class="action-btn delete-btn" data-id="{{ lecturer.id }}">❌</button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6">
+                  <div class="empty-state">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <p>No lecturers available</p>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <!-- Add Lecturer Modal -->
+    <div id="lecturerModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Add Lecturer</h2>
+          <span class="close">&times;</span>
+        </div>
+        <form id="lecturerForm">
+
+          <div class="form-group">
+            <select id="faculty" required>
+              <option value="">Select Faculty</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <select id="course" required>
+              <option value="">Select Faculty First</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <input
+              type="text"
+              id="firstName"
+              placeholder="First Name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <input
+              type="text"
+              id="lastName"
+              placeholder="Last Name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <input
+              type="email"
+              id="email"
+              placeholder="Email Address"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <input
+              type="tel"
+              id="phone"
+              placeholder="Phone Number"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <input
+              type="password"
+              id="password"
+              placeholder="Password"
+              required
+            />
+          </div>
+
+         
+
+          <button type="submit" class="save-btn">Save Lecturer</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Get modal elements
+      const modal = document.getElementById("lecturerModal");
+      const closeBtn = document.querySelector(".close");
+      const addLecturerBtn = document.getElementById("addLecturerBtn");
+      const lecturerForm = document.getElementById("lecturerForm");
+      const facultySelect = document.getElementById("faculty");
+      const courseSelect = document.getElementById("course");
+
+      // Debug log to check if elements are found
+      console.log("Modal:", modal);
+      console.log("Add Button:", addLecturerBtn);
+
+      // Show modal when Add Lecturer button is clicked
+      addLecturerBtn.addEventListener("click", function (e) {
+        e.preventDefault(); // Prevent default link behavior
+        console.log("Add Lecturer button clicked");
+        modal.style.display = "flex";
+        loadFaculties();
+      });
+
+      // Close modal when X is clicked
+      closeBtn.addEventListener("click", function () {
+        modal.style.display = "none";
+      });
+
+      // Close modal when clicking outside
+      window.addEventListener("click", function (event) {
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      });
+
+      // Load faculties when modal opens
+      function loadFaculties() {
+        const facultySelect = document.getElementById("faculty");
+        facultySelect.innerHTML = '<option value="">Select Faculty</option>';
+
+        fetch("/get_faculties")
+          .then((response) => response.json())
+          .then((faculties) => {
+            console.log("Received faculties:", faculties); // Debug log
+            faculties.forEach((faculty) => {
+              const option = document.createElement("option");
+              option.value = faculty.facultyCode;
+              option.textContent = faculty.facultyName;
+              facultySelect.appendChild(option);
+            });
+          })
+          .catch((error) => {
+            console.error("Error loading faculties:", error);
+            facultySelect.innerHTML = '<option value="">Error loading faculties</option>';
+          });
+      }
+
+      // Add function to load courses based on faculty
+      function loadCoursesByFaculty(facultyCode) {
+          console.log('Loading courses for faculty:', facultyCode); // Debug log
+          courseSelect.innerHTML = '<option value="">Loading Courses...</option>';
+
+          fetch(`/get_courses_by_faculty/${facultyCode}`)
+              .then(response => response.json())
+              .then(courses => {
+                  console.log('Received courses:', courses); // Debug log
+                  courseSelect.innerHTML = '<option value="">Select Course</option>';
+
+                  if (Array.isArray(courses) && courses.length > 0) {
+                      courses.forEach(course => {
+                          const option = document.createElement('option');
+                          option.value = course.courseCode; // Assuming courseCode is the value you need
+                          option.textContent = `${course.name} (${course.courseCode})`; // Display name and code
+                          courseSelect.appendChild(option);
+                      });
+                  } else {
+                      const option = document.createElement('option');
+                      option.value = "";
+                      option.textContent = "No courses available for this faculty";
+                      courseSelect.appendChild(option);
+                  }
+              })
+              .catch(error => {
+                  console.error('Error loading courses:', error);
+                  courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+              });
+      }
+
+      // Add event listener for faculty selection change
+      facultySelect.addEventListener('change', function() {
+          const selectedFacultyCode = this.value;
+          if (selectedFacultyCode) {
+              loadCoursesByFaculty(selectedFacultyCode);
+          } else {
+              courseSelect.innerHTML = '<option value="">Select Faculty First</option>';
+          }
+      });
+
+      // Handle form submission
+      lecturerForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        
+        const formData = {
+            firstName: document.getElementById("firstName").value,
+            lastName: document.getElementById("lastName").value,
+            email: document.getElementById("email").value,
+            phone: document.getElementById("phone").value,
+            password: document.getElementById("password").value,
+            faculty: document.getElementById("faculty").value,
+            course: document.getElementById("course").value // Include selected course
+        };
+        
+        console.log("Submitting lecturer data:", formData); // Debug log
+        
+        fetch("/add_lecturer", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Lecturer added successfully!");
+                modal.style.display = "none";
+                document.getElementById("lecturerForm").reset();
+                location.reload();
+            } else {
+                alert("Error: " + (data.message || "Failed to add lecturer"));
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Error adding lecturer. Please try again.");
+        });
+      });
+
+      // Delete lecturer functionality
+      document.querySelectorAll('.delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const lecturerId = this.getAttribute('data-id');
+          if (confirm('Are you sure you want to delete this lecturer?')) {
+            fetch('/delete_lecturer', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ id: lecturerId })
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                alert('Lecturer deleted successfully!');
+                location.reload();
+              } else {
+                alert('Error: ' + (data.message || 'Failed to delete lecturer'));
+              }
+            })
+            .catch(error => {
+              alert('Error deleting lecturer. Please try again.');
+            });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Attendance System</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+  </head>
+  <body>
+    <div class="custom-header">
+      <div class="header-left">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="University Logo" class="header-logo">
+        <div class="header-text">
+          <div class="header-title">punjab-school-attendance-system</div>
+          <div class="header-si">punjab goverment</div>
+          <div class="header-ta">ਪੰਜਾਬ ਸਰਕਾਰ</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <img src="{{ url_for('static', filename='images/face1.png') }}" alt="Face Icon" class="header-face-icon">
+        <div class="header-system">Face Recognition Attendance System</div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      
+      <ul><br>
+        <li>
+          <a href="{{ url_for('dashboard') }}" class="active">Dashboard </a>
+        </li>
+        <li>
+          <a href="{{ url_for('manage_courses') }}">Manage Courses</a>
+        </li>
+        <li>
+          <a href="{{ url_for('manage_venues') }}">Create Venue</a>
+        </li>
+        <li>
+          <a href="{{ url_for('manage_lectures') }}">Manage Lectures</a>
+        </li>
+        <li>
+          <a href="{{ url_for('manage_students') }}">Manage Students</a>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </div>
+
+    <div class="main-content">
+    
+
+      <section class="overview">
+        <div class="card">
+          Registered Students <br />
+          <span>{{ total_students }}</span>
+        </div>
+        <div class="card">
+          Courses <br />
+          <span>{{ total_courses }}</span>
+        </div>
+        <div class="card">
+          Registered Lectures <br />
+          <span>{{ total_lecturers }}</span>
+        </div>
+      </section>
+
+      <section class="data-section">
+        <div class="section-header">
+          <h3>Lectures</h3>
+          <a href="{{ url_for('manage_lectures') }}" class="add-btn">Add Lecture</a>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email Address</th>
+              <th>Phone No</th>
+              <th>Faculty</th>
+              <th>Date Registered</th>
+              <th>Settings</th>
+            </tr>
+          </thead>
+          <tbody id="lecturerTableBody">
+            {% for lecturer in lecturers[:4] %}
+            <tr>
+              <td>{{ lecturer.firstName }} {{ lecturer.lastName }}</td>
+              <td>{{ lecturer.emailAddress }}</td>
+              <td>{{ lecturer.phoneNo }}</td>
+              <td>{{ lecturer.facultyCode }}</td>
+              <td>{{ lecturer.dateCreated }}</td>
+              <td><span class="delete-btn" data-type="lecturer" data-id="{{ lecturer.id }}">❌</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="table-controls">
+          {% if lecturers and lecturers|length > 4 %}
+            <button class="show-more-btn" onclick="showMoreLecturers()">Show More</button>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="data-section">
+        <div class="section-header">
+          <h3>Students</h3>
+          <a href="{{ url_for('manage_students') }}" class="add-btn">Add Student</a>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="registrationNumber">Registration No</th>
+              <th>Name</th>
+              <th>Faculty</th>
+              <th>Course</th>
+              <th>Email</th>
+              <th>Settings</th>
+            </tr>
+          </thead>
+          <tbody id="studentTableBody">
+            {% for student in students[:4] %}
+            <tr>
+              <td>{{ student.registrationNumber }}</td>
+              <td>{{ student.firstName }} {{ student.lastName }}</td>
+              <td>{{ student.faculty }}</td>
+              <td>{{ student.courseCode }}</td>
+              <td>{{ student.email }}</td>
+              <td><span class="delete-btn" data-type="student" data-id="{{ student.registrationNumber }}">❌</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="table-controls">
+          {% if students and students|length > 4 %}
+            <button class="show-more-btn" onclick="showMoreStudents()">Show More</button>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="data-section">
+        <div class="section-header">
+          <h3>Lecture Rooms</h3>
+          <a href="{{ url_for('manage_venues') }}" class="add-btn">Add Room</a>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Class Name</th>
+              <th>Faculty</th>
+              <th>Current Status</th>
+              <th>Capacity</th>
+              <th>Classification</th>
+              <th>Settings</th>
+            </tr>
+          </thead>
+          <tbody id="roomTableBody">
+            {% for room in lecture_rooms[:4] %}
+            <tr>
+              <td>{{ room.className }}</td>
+              <td>{{ room.facultyCode }}</td>
+              <td>{{ room.currentStatus }}</td>
+              <td>{{ room.capacity }}</td>
+              <td>{{ room.classification }}</td>
+              <td><span class="delete-btn" data-type="room" data-id="{{ room.id }}">❌</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="table-controls">
+          {% if lecture_rooms and lecture_rooms|length > 4 %}
+            <button class="show-more-btn" onclick="showMoreRooms()">Show More</button>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="data-section">
+        <div class="section-header">
+          <h3>Courses</h3>
+          <a href="{{ url_for('manage_courses') }}" class="add-btn">Add Course</a>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Faculty</th>
+              <th>Total Units</th>
+              <th>Total Students</th>
+              <th>Date Created</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="courseTableBody">
+            {% for course in courses[:4] %}
+            <tr>
+              <td>{{ course.name }}</td>
+              <td>{{ course.facultyID }}</td>
+              <td>{{ course.total_units }}</td>
+              <td>{{ course.total_students }}</td>
+              <td>{{ course.dateCreated }}</td>
+              <td><span class="delete-btn" data-type="course" data-id="{{ course.id }}">❌</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="table-controls">
+          {% if courses and courses|length > 4 %}
+            <button class="show-more-btn" onclick="showMoreCourses()">Show More</button>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+
+    <script>
+        const dashboardData = {
+            lecturers: {{ lecturers|tojson|safe }},
+            students: {{ students|tojson|safe }},
+            lecture_rooms: {{ lecture_rooms|tojson|safe }},
+            courses: {{ courses|tojson|safe }}
+        };
+
+        let lecturerCurrentIndex = 4;
+        let studentCurrentIndex = 4;
+        let roomCurrentIndex = 4;
+        let courseCurrentIndex = 4;
+        const ITEMS_PER_LOAD = 4;
+        let currentSort = {
+            column: 'registrationNumber',
+            direction: 'desc'
+        };
+
+        function showMoreLecturers() {
+            const tbody = document.getElementById('lecturerTableBody');
+            const showMoreBtn = document.querySelector('[onclick="showMoreLecturers()"]');
+            const tableControls = showMoreBtn.parentElement;
+            
+            for(let i = lecturerCurrentIndex; i < Math.min(lecturerCurrentIndex + ITEMS_PER_LOAD, dashboardData.lecturers.length); i++) {
+                const lecturer = dashboardData.lecturers[i];
+                const row = `
+                    <tr class="extra-row">
+                        <td>${lecturer.firstName} ${lecturer.lastName}</td>
+                        <td>${lecturer.emailAddress}</td>
+                        <td>${lecturer.phoneNo}</td>
+                        <td>${lecturer.facultyCode}</td>
+                        <td>${lecturer.dateCreated}</td>
+                        <td><span class="delete-btn" data-type="lecturer" data-id="${lecturer.id}">❌</span></td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            }
+            
+            lecturerCurrentIndex += ITEMS_PER_LOAD;
+            if (lecturerCurrentIndex >= dashboardData.lecturers.length) {
+                showMoreBtn.style.display = 'none';
+                const showLessBtn = document.createElement('button');
+                showLessBtn.className = 'show-more-btn';
+                showLessBtn.textContent = 'Show Less';
+                showLessBtn.onclick = showLessLecturers;
+                tableControls.appendChild(showLessBtn);
+            }
+        }
+
+        function showLessLecturers() {
+            const tbody = document.getElementById('lecturerTableBody');
+            const extraRows = tbody.querySelectorAll('.extra-row');
+            extraRows.forEach(row => row.remove());
+            lecturerCurrentIndex = 4;
+            document.querySelector('[onclick="showMoreLecturers()"]').style.display = 'inline-block';
+            this.remove();
+        }
+
+        function showMoreStudents() {
+            const tbody = document.getElementById('studentTableBody');
+            const showMoreBtn = document.querySelector('[onclick="showMoreStudents()"]');
+            const tableControls = showMoreBtn.parentElement;
+            
+            for(let i = studentCurrentIndex; i < Math.min(studentCurrentIndex + ITEMS_PER_LOAD, dashboardData.students.length); i++) {
+                const student = dashboardData.students[i];
+                const row = `
+                    <tr class="extra-row">
+                        <td>${student.registrationNumber}</td>
+                        <td>${student.firstName} ${student.lastName}</td>
+                        <td>${student.faculty}</td>
+                        <td>${student.courseCode}</td>
+                        <td>${student.email}</td>
+                        <td><span class="delete-btn" data-type="student" data-id="${student.registrationNumber}">❌</span></td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            }
+            
+            studentCurrentIndex += ITEMS_PER_LOAD;
+            if (studentCurrentIndex >= dashboardData.students.length) {
+                showMoreBtn.style.display = 'none';
+                const showLessBtn = document.createElement('button');
+                showLessBtn.className = 'show-more-btn';
+                showLessBtn.textContent = 'Show Less';
+                showLessBtn.onclick = showLessStudents;
+                tableControls.appendChild(showLessBtn);
+            }
+        }
+
+        function showLessStudents() {
+            const tbody = document.getElementById('studentTableBody');
+            const extraRows = tbody.querySelectorAll('.extra-row');
+            extraRows.forEach(row => row.remove());
+            studentCurrentIndex = 4;
+            document.querySelector('[onclick="showMoreStudents()"]').style.display = 'inline-block';
+            this.remove();
+        }
+
+        function showMoreRooms() {
+            const tbody = document.getElementById('roomTableBody');
+            const showMoreBtn = document.querySelector('[onclick="showMoreRooms()"]');
+            const tableControls = showMoreBtn.parentElement;
+            
+            for(let i = roomCurrentIndex; i < Math.min(roomCurrentIndex + ITEMS_PER_LOAD, dashboardData.lecture_rooms.length); i++) {
+                const room = dashboardData.lecture_rooms[i];
+                const row = `
+                    <tr class="extra-row">
+                        <td>${room.className}</td>
+                        <td>${room.facultyCode}</td>
+                        <td>${room.currentStatus}</td>
+                        <td>${room.capacity}</td>
+                        <td>${room.classification}</td>
+                        <td><span class="delete-btn" data-type="room" data-id="${room.id}">❌</span></td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            }
+            
+            roomCurrentIndex += ITEMS_PER_LOAD;
+            if (roomCurrentIndex >= dashboardData.lecture_rooms.length) {
+                showMoreBtn.style.display = 'none';
+                const showLessBtn = document.createElement('button');
+                showLessBtn.className = 'show-more-btn';
+                showLessBtn.textContent = 'Show Less';
+                showLessBtn.onclick = showLessRooms;
+                tableControls.appendChild(showLessBtn);
+            }
+        }
+
+        function showLessRooms() {
+            const tbody = document.getElementById('roomTableBody');
+            const extraRows = tbody.querySelectorAll('.extra-row');
+            extraRows.forEach(row => row.remove());
+            roomCurrentIndex = 4;
+            document.querySelector('[onclick="showMoreRooms()"]').style.display = 'inline-block';
+            this.remove();
+        }
+
+        function showMoreCourses() {
+            const tbody = document.getElementById('courseTableBody');
+            const showMoreBtn = document.querySelector('[onclick="showMoreCourses()"]');
+            const tableControls = showMoreBtn.parentElement;
+            
+            for(let i = courseCurrentIndex; i < Math.min(courseCurrentIndex + ITEMS_PER_LOAD, dashboardData.courses.length); i++) {
+                const course = dashboardData.courses[i];
+                const row = `
+                    <tr class="extra-row">
+                        <td>${course.name}</td>
+                        <td>${course.facultyID}</td>
+                        <td>${course.total_units}</td>
+                        <td>${course.total_students}</td>
+                        <td>${course.dateCreated}</td>
+                        <td><span class="delete-btn" data-type="course" data-id="${course.id}">❌</span></td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            }
+            
+            courseCurrentIndex += ITEMS_PER_LOAD;
+            if (courseCurrentIndex >= dashboardData.courses.length) {
+                showMoreBtn.style.display = 'none';
+                const showLessBtn = document.createElement('button');
+                showLessBtn.className = 'show-more-btn';
+                showLessBtn.textContent = 'Show Less';
+                showLessBtn.onclick = showLessCourses;
+                tableControls.appendChild(showLessBtn);
+            }
+        }
+
+        function showLessCourses() {
+            const tbody = document.getElementById('courseTableBody');
+            const extraRows = tbody.querySelectorAll('.extra-row');
+            extraRows.forEach(row => row.remove());
+            courseCurrentIndex = 4;
+            document.querySelector('[onclick="showMoreCourses()"]').style.display = 'inline-block';
+            this.remove();
+        }
+
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('delete-btn')) {
+                const type = e.target.getAttribute('data-type');
+                const id = e.target.getAttribute('data-id');
+                if (!confirm('Are you sure you want to delete this item?')) return;
+
+                let url, payload;
+                if (type === 'student') {
+                    url = '/delete_student';
+                    payload = { registrationNumber: id };
+                } else if (type === 'lecturer') {
+                    url = '/delete_lecturer';
+                    payload = { id: id };
+                } else if (type === 'room') {
+                    url = '/delete_room';
+                    payload = { id: id };
+                } else if (type === 'course') {
+                    url = '/delete_course';
+                    payload = { id: id };
+                } else {
+                    return;
+                }
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the row from the table
+                        e.target.closest('tr').remove();
+                    } else {
+                        alert('Delete failed: ' + (data.message || 'Unknown error'));
+                    }
+                });
+            }
+        });
+
+        // Add sorting functionality
+        function sortStudents(column) {
+            const tbody = document.getElementById('studentTableBody');
+            const rows = Array.from(tbody.getElementsByTagName('tr'));
+            
+            // Update sort direction
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+
+            // Sort the data
+            dashboardData.students.sort((a, b) => {
+                let valueA = a[column];
+                let valueB = b[column];
+                
+                // Handle string comparison for registration numbers
+                if (column === 'registrationNumber') {
+                    return currentSort.direction === 'asc' 
+                        ? valueA.localeCompare(valueB)
+                        : valueB.localeCompare(valueA);
+                }
+                
+                return currentSort.direction === 'asc'
+                    ? valueA > valueB ? 1 : -1
+                    : valueA < valueB ? 1 : -1;
+            });
+
+            // Clear the table
+            tbody.innerHTML = '';
+            
+            // Reset indices
+            studentCurrentIndex = 4;
+            
+            // Re-render the first 4 items
+            for(let i = 0; i < Math.min(4, dashboardData.students.length); i++) {
+                const student = dashboardData.students[i];
+                const row = `
+                    <tr>
+                        <td>${student.registrationNumber}</td>
+                        <td>${student.firstName} ${student.lastName}</td>
+                        <td>${student.faculty}</td>
+                        <td>${student.courseCode}</td>
+                        <td>${student.email}</td>
+                        <td><span class="delete-btn" data-type="student" data-id="${student.registrationNumber}">❌</span></td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            }
+
+            // Update sort indicator in header
+            const headers = document.querySelectorAll('th.sortable');
+            headers.forEach(header => {
+                header.textContent = 'Registration No';
+            });
+
+            // Show/hide show more button based on data length
+            const showMoreBtn = document.querySelector('[onclick="showMoreStudents()"]');
+            if (showMoreBtn) {
+                showMoreBtn.style.display = dashboardData.students.length > 4 ? 'inline-block' : 'none';
+            }
+        }
+
+        // Add click handler for sortable headers
+        document.addEventListener('DOMContentLoaded', function() {
+            const sortableHeaders = document.querySelectorAll('th.sortable');
+            sortableHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    sortStudents(header.dataset.sort);
+                });
+            });
+            
+            // Initial sort
+            sortStudents('registrationNumber');
+        });
+    </script>
+  </body>
+</html>

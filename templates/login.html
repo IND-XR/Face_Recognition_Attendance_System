@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Attendance System</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body class="login-page">
+    <div class="login-container">
+      <!-- Header -->
+      <div class="login-header">
+        <img class="uplogo" src="https://img-wrapper.vercel.app/image?url=https://s3-alpha-sig.figma.com/img/8157/eaba/167e70e0bab8b4f72aebdd004c52efe1?Expires=1759104000&Key-Pair-Id=APKAQ4GOSFWCW27IBOMQ&Signature=i0BpimHMNznqYSE1l1YWVizJax63Rh7hysAxddwJMIfS8voeIsZN7SSQZB1c~S1-HxaZ0b-b3hNUoe8ACXCtArFffKFid6zX3P2iweskHfAnerAevWhJNIgqNOaoOtEBnLKpTKvWqTiq6LcYQBCo~QSdDPW0Q8wythMh9vQGls~BM~frBOoH4EFVolBFEiv46bexiHVJGvlskOz7SBwNJH7g2QbIDstWX8H7tDAzFO-0UeCz~JPIFv99M8feaLJ1Z4-VtRaCZzEoAuuHyCytJwjsg44ldZ-NcoGzg~drrbSZwh3y86OwmeiVboaDxsQ1a56PX2VOHbv7vBN6yla~PA__" alt="Education Logo" class="logo-image" />
+
+        <h2>Welcome to punjab</h2>
+        <p class="subtitle">Let Access All Work From Here</p>
+      </div>
+
+      <!-- Login Form -->
+      <form method="POST" action="/login" class="login-form"> 
+        <!-- Role -->
+        <div class="form-group">
+          <label for="role">Role</label>
+          <select name="role" id="role" required>
+            <option value="">Select your role</option>
+            <option value="Admin">Admin</option>
+            <option value="Lecturer">Lecturer</option>
+          </select>
+        </div>
+
+        <!-- Email  -->
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            name="email"
+            id="email"
+            placeholder="Enter your email"
+            required
+          />
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="Enter your password"
+            required
+          />
+        </div>
+
+        <!-- Button -->
+        <button type="submit" class="login-button">Login</button>
+        <img src="https://img-wrapper.vercel.app/image?url=https://s3-alpha-sig.figma.com/img/0d2e/7296/1a9ad4792d01d8a025c274e3ec3338cf?Expires=1759104000&Key-Pair-Id=APKAQ4GOSFWCW27IBOMQ&Signature=Ls7CVxvKpAZxuUTGwLcE4n1FQx8IAY5ZzvoWZ7yFHOcJ9u6-yaLaHm6UZ1B2Xx6qE9zC1mFWdpefKA0id1iLKNX8-3~eGHewkKK7U6qz8F670UlLRuhXEfjTOfVl1cOK8LOMLosGuVhEBdFpluuourSl7J2dVqNHIGGu02s-M14AYe023d7vOQbqoUOTE9HO4~O8da3z7uX9GW-ZsgiDOhuqPSM2TDidXrtX9czyj-5TGHcvPwihpEwOYmjvnnWtQs7To66bykZUmi3wkR-QsjUeDU---naI3VZS60bK2w1BO6aTd6dUR-BTxhsbag92k0Mr91dIuJvPoycpUAv3Wg__" alt="Study Illustration" class="study-illustration" />
+
+      </form>
+    </div>
+  </body>
+</html> 
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Attendance System</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="login-page">
+    <div class="login-container">
+      <div class="login-header">
+        <h2>Welcome Back!</h2>
+        <p class="subtitle">Face Recognition Attendance System</p>
+      </div>
+
+      <form method="POST" action="/login" class="login-form">
+        <div class="form-group">
+          <label for="role">Role</label>
+          <select name="role" id="role" required>
+            <option value="">Select your role</option>
+            <option value="Admin">Admin</option>
+            <option value="Lecturer">Lecturer</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" name="email" id="email" required />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" name="password" id="password" required />
+        </div>
+
+        <button type="submit" class="login-button">Login</button>
+      </form>
+    </div>
+  </body>
+</html> -->
+
+<!--
+
+ .\.venv\Scripts\Activate.ps1
+  python app.py
+
+-->

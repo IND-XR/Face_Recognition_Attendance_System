@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Courses - Attendance System</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+
+    <script>
+      function openModal(modalId) {
+        document.getElementById(modalId).style.display = "block";
+      }
+      function closeModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+      }
+    </script>
+  </head>
+  <body>
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Manage Students - Attendance System</title>
+        <link
+          rel="stylesheet"
+          href="{{ url_for('static', filename='styles.css') }}"
+        />
+      </head>
+      <body>
+        <div class="custom-header">
+          <div class="header-left">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="University Logo" class="header-logo">
+            <div class="header-text">
+              <div class="header-title">punjab-college-attendance-system</div>
+              <div class="header-si">punjab goverment</div>
+              <div class="header-ta">ਪੰਜਾਬ ਸਰਕਾਰ</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <img src="{{ url_for('static', filename='images/face1.png') }}" alt="Face Icon" class="header-face-icon">
+            <div class="header-system">Face Recognition Attendance System</div>
+          </div>
+        </div>
+        <div class="sidebar">
+          
+          <ul><br>
+            <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li>
+              <a href="{{ url_for('manage_courses') }}" class="active"
+                >Manage Courses</a
+              >
+            </li>
+            <li><a href="{{ url_for('manage_venues') }}">Create Venue</a></li>
+            <li>
+              <a href="{{ url_for('manage_lectures') }}">Manage Lectures</a>
+            </li>
+            <li>
+              <a href="{{ url_for('manage_students') }}">Manage Students</a>
+            </li>
+          </ul>
+          <div class="sidebar-footer">
+            
+            <a href="{{ url_for('logout') }}">Logout</a>
+          </div>
+        </div>
+
+        <div class="main-content">
+         <br>
+
+          <h3 class="page-title">Overview</h3>
+
+          <section class="overview">
+            <div class="card">
+              <div class="card-content">
+                <span class="count" id="courseCount">{{ total_courses }}</span>
+                <p>Courses</p>
+              </div>
+              <a
+                href="#"
+                class="add-small-btn"
+                onclick="openModal('addCourseModal')"
+                >+ Add Course</a
+              >
+            </div>
+            <div class="card">
+              <div class="card-content">
+                <span class="count" id="unitCount">{{ total_units }}</span>
+                <p>Units</p>
+              </div>
+              <a
+                href="#"
+                class="add-small-btn"
+                onclick="openAddUnitModal()"
+                >+ Add Units</a
+              >
+            </div>
+            <div class="card">
+              <div class="card-content">
+                <span class="count" id="facultyCount">{{ total_faculties }}</span>
+                <p>Faculties</p>
+              </div>
+              <a
+                href="#"
+                class="add-small-btn"
+                onclick="openModal('addFacultyModal')"
+                >+ Add Faculty</a
+              >
+            </div>
+          </section>
+
+          <!-- Course Table Section -->
+          <section class="data-section">
+            <div class="section-header">
+              <h3>Courses</h3>
+            </div>
+            
+            <div class="table-section">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>NAME</th>
+                            <th>FACULTY</th>
+                            <th>TOTAL UNITS</th>
+                            <th>TOTAL STUDENTS</th>
+                            <th>DATE CREATED</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="courseTableBody">
+                        {% if courses %}
+                            {% for course in courses %}
+                            <tr>
+                                <td>{{ course.name }}</td>
+                                <td>{{ course.facultyID }}</td>
+                                <td>{{ course.total_units or 0 }}</td>
+                                <td>{{ course.total_students or 0 }}</td>
+                                <td>{{ course.dateCreated }}</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="delete-btn" data-type="course" data-id="{{ course.id }}" title="Delete">❌</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">No courses available</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+                {% if courses and courses|length > 4 %}
+                <div class="table-controls">
+                    <button class="show-more-btn" onclick="showMoreCourses()">Show More</button>
+                </div>
+                {% endif %}
+            </div>
+          </section>
+
+          <!-- Units Table Section -->
+          <section class="data-section">
+            <div class="section-header">
+              <h3>Units</h3>
+            </div>
+            
+            <table>
+              <thead>
+                <tr>
+                  <th>Unit Code</th>
+                  <th>Name</th>
+                  <th>Course</th>
+                  <th>Total Students</th>
+                  <th>Date Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="unitTableBody">
+                {% if units %}
+                  {% for unit in units[:4] %}
+                  <tr>
+                    <td>{{ unit.unitCode }}</td>
+                    <td>{{ unit.name }}</td>
+                    <td>
+                      <span class="status-badge">{{ unit.course or 'N/A' }}</span>
+                    </td>
+                    <td>{{ unit.total_students or 0 }}</td>
+                    <td>{{ unit.dateCreated }}</td>
+                    <td>
+                      <button class="delete-btn" data-type="unit" data-id="{{ unit.unitCode }}" title="Delete">❌</button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="6">
+                      <div class="empty-state">
+                        <i class="fas fa-book-open"></i>
+                        <p>No units available</p>
+                      </div>
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+            {% if units and units|length > 4 %}
+            <div class="table-controls">
+              <button class="show-more-btn" onclick="showMoreUnits()">Show More</button>
+            </div>
+            {% endif %}
+          </section>
+
+          <!-- Faculty Table Section -->
+          <section class="data-section">
+            <div class="section-header">
+                <h3>Faculty</h3>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Total Courses</th>
+                        <th>Total Students</th>
+                        <th>Total Lectures</th>
+                        <th>Date Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="facultyTableBody">
+                    {% if faculties %}
+                        {% for faculty in faculties[:4] %}
+                        <tr>
+                            <td>{{ faculty.code }}</td>
+                            <td><span class="status-badge">{{ faculty.name }}</span></td>
+                            <td>{{ faculty.total_courses or 0 }}</td>
+                            <td>{{ faculty.total_students or 0 }}</td>
+                            <td>{{ faculty.total_lectures or 0 }}</td>
+                            <td>{{ faculty.dateCreated }}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="delete-btn" data-type="faculty" data-id="{{ faculty.code }}" title="Delete">❌</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <i class="fas fa-building"></i>
+                                    <p>No faculties available</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            {% if faculties and faculties|length > 4 %}
+            <div class="table-controls">
+                <button class="show-more-btn" onclick="showMoreFaculties()">Show More</button>
+            </div>
+            {% endif %}
+          </section>
+        </div>
+
+        <!-- Add Faculty Modal -->
+        <div id="addFacultyModal" class="modal">
+          <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('addFacultyModal')"
+              >&times;</span
+            >
+            <h2>Add Faculty</h2>
+            <form
+              class="modal-form"
+              action="{{ url_for('add_faculty') }}"
+              method="POST"
+            >
+              <div class="form-group">
+                <label for="facultyName">Faculty Name</label>
+                <input
+                  type="text"
+                  id="facultyName"
+                  name="facultyName"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="facultyCode">Faculty Code</label>
+                <input
+                  type="text"
+                  id="facultyCode"
+                  name="facultyCode"
+                  required
+                />
+              </div>
+              <button type="submit" class="save-btn">Save Faculty</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Add Course Modal -->
+        <div class="modal" id="addCourseModal">
+          <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('addCourseModal')">&times;</span>
+            <h2>Add Course</h2>
+            <div class="form-group">
+              <label for="faculty">Faculty</label>
+              <select id="faculty" required>
+                <option value="">Select Faculty</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="courseName">Course Name</label>
+              <input type="text" id="courseName" required>
+            </div>
+            <div class="form-group">
+              <label for="courseCode">Course Code</label>
+              <input type="text" id="courseCode" required>
+            </div>
+            
+            <div class="modal-buttons">
+              <button onclick="addCourse()" class="save-btn">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Unit Modal -->
+        <div id="addUnitModal" class="modal">
+          <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('addUnitModal')">&times;</span>
+            <h2>Add Unit</h2>
+            <div class="form-group">
+              <label for="course">Course</label>
+              <select id="course" name="course" required>
+                <option value="">Select Course</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="unitCode">Unit Code</label>
+              <input type="text" id="unitCode" name="unitCode" required>
+            </div>
+            <div class="form-group">
+              <label for="unitName">Unit Name</label>
+              <input type="text" id="unitName" name="unitName" required>
+            </div>
+          
+            <div class="modal-buttons">
+              <button onclick="addUnit()" class="save-btn">Save Unit</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Student Modal -->
+        <div id="addStudentModal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeModal('addStudentModal')">&times;</span>
+                <h2>Add Student</h2>
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="registrationNumber">Registration Number</label>
+                    <input type="text" id="registrationNumber" required>
+                </div>
+                <div class="form-group">
+                    <label for="course">Course</label>
+                    <select id="course" required>
+                        <option value="">Select Course</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button onclick="addStudent()" class="save-btn">Save Student</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Update the JavaScript for modal functionality -->
+        <script>
+          // Close modal when clicking outside
+          window.onclick = function (event) {
+            if (event.target.classList.contains("modal")) {
+              event.target.style.display = "none";
+            }
+          };
+
+          document.addEventListener("DOMContentLoaded", function () {
+            const addCourseBtn = document.querySelector(".add-small-btn");
+            const courseForm = document.getElementById("courseForm");
+
+            // Show modal when Add Course button is clicked
+            if (addCourseBtn) {
+              addCourseBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+                openModal("addCourseModal");
+              });
+            }
+          });
+
+          document.addEventListener('DOMContentLoaded', function() {
+            const facultySelect = document.getElementById('faculty');
+            
+            function loadFaculties() {
+                console.log('Loading faculties...'); // Debug log
+                facultySelect.innerHTML = '<option value="">Select Faculty</option>';
+                
+                fetch('/get_faculties')
+                    .then(response => response.json())
+                    .then(faculties => {
+                        console.log('Received faculties:', faculties); // Debug log
+                        
+                        if (Array.isArray(faculties) && faculties.length > 0) {
+                            faculties.forEach(faculty => {
+                                const option = document.createElement('option');
+                                option.value = faculty.facultyCode;  // Changed from faculty.id to faculty.facultyCode
+                                option.textContent = `${faculty.facultyName} (${faculty.facultyCode})`;  // Show both name and code
+                                facultySelect.appendChild(option);
+                            });
+                        } else {
+                            const option = document.createElement('option');
+                            option.value = "";
+                            option.textContent = "No faculties available";
+                            facultySelect.appendChild(option);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading faculties:', error);
+                        facultySelect.innerHTML = '<option value="">Error loading faculties</option>';
+                    });
+            }
+
+            // Load faculties when the modal is opened
+            const addCourseBtn = document.querySelector('[onclick="openModal(\'addCourseModal\')"]');
+            if (addCourseBtn) {
+                addCourseBtn.addEventListener('click', function() {
+                    loadFaculties();
+                });
+            }
+
+            const addCourseForm = document.getElementById('addCourseForm');
+
+            // Add submit handler for the course form
+            if (addCourseForm) {
+                addCourseForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const courseName = document.getElementById('courseName').value;
+                    const courseCode = document.getElementById('courseCode').value;
+                    const faculty = document.getElementById('faculty').value;
+                    
+                    console.log('Submitting course:', {
+                        courseName: courseName,
+                        courseCode: courseCode,
+                        faculty: faculty
+                    });
+
+                    fetch('/add_course', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            courseName: courseName,
+                            courseCode: courseCode,
+                            faculty: faculty
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Course added successfully!');
+                            closeModal('addCourseModal');
+                            document.getElementById('courseName').value = '';
+                            document.getElementById('courseCode').value = '';
+                            document.getElementById('faculty').value = '';
+                            updateCardCounts();
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + (data.message || 'Failed to add course'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error adding course');
+                    });
+                });
+            }
+          });
+
+          // Initialize data at the top level with proper error handling
+          const initialData = {
+              courses: JSON.parse('{{ courses|tojson|safe }}' || '[]'),
+              units: JSON.parse('{{ units|tojson|safe }}' || '[]'),
+              faculties: JSON.parse('{{ faculties|tojson|safe }}' || '[]')
+          };
+
+          let courseCurrentIndex = 4;
+          let unitCurrentIndex = 4;
+          let facultyCurrentIndex = 4;
+          const ITEMS_PER_LOAD = 4;
+
+          function showMoreCourses() {
+              const courseTbody = document.getElementById('courseTableBody');
+              const showMoreBtn = document.querySelector('[onclick="showMoreCourses()"]');
+              
+              for(let i = courseCurrentIndex; i < Math.min(courseCurrentIndex + ITEMS_PER_LOAD, initialData.courses.length); i++) {
+                  const course = initialData.courses[i];
+                  const row = `
+                      <tr class="extra-row">
+                          <td>${course.course_name}</td>
+                          <td>${course.faculty_name || 'N/A'}</td>
+                          <td>${course.total_units || 0}</td>
+                          <td>${course.total_students || 0}</td>
+                          <td>${course.date_created || 'N/A'}</td>
+                          <td>
+                              <div class="action-buttons">
+                                  <button class="action-btn edit-btn">✏️</button>
+                                  <button class="action-btn delete-btn">❌</button>
+                              </div>
+                          </td>
+                      </tr>
+                  `;
+                  courseTbody.insertAdjacentHTML('beforeend', row);
+              }
+              
+              courseCurrentIndex += ITEMS_PER_LOAD;
+              if (courseCurrentIndex >= initialData.courses.length) {
+                  showMoreBtn.style.display = 'none';
+                  const showLessBtn = document.createElement('button');
+                  showLessBtn.className = 'show-more-btn';
+                  showLessBtn.textContent = 'Show Less';
+                  showLessBtn.onclick = showLessCourses;
+                  showMoreBtn.parentNode.appendChild(showLessBtn);
+              }
+          }
+
+          function showLessCourses() {
+              const courseTbody = document.getElementById('courseTableBody');
+              const extraRows = courseTbody.querySelectorAll('.extra-row');
+              extraRows.forEach(row => row.remove());
+              courseCurrentIndex = 4;
+              document.querySelector('[onclick="showMoreCourses()"]').style.display = 'inline-block';
+              this.remove(); // Remove the Show Less button
+          }
+
+          function showMoreUnits() {
+              const unitTbody = document.getElementById('unitTableBody');
+              const showMoreBtn = document.querySelector('[onclick="showMoreUnits()"]');
+              
+              for(let i = unitCurrentIndex; i < Math.min(unitCurrentIndex + ITEMS_PER_LOAD, initialData.units.length); i++) {
+                  const unit = initialData.units[i];
+                  const row = `
+                      <tr class="extra-row">
+                          <td>${unit.code}</td>
+                          <td>${unit.name}</td>
+                          <td>${unit.course}</td>
+                          <td>${unit.total_student}</td>
+                          <td>${unit.dateCreated}</td>
+                          <td><a href="#" class="delete-btn">❌</a></td>
+                      </tr>
+                  `;
+                  unitTbody.insertAdjacentHTML('beforeend', row);
+              }
+              
+              unitCurrentIndex += ITEMS_PER_LOAD;
+              if (unitCurrentIndex >= initialData.units.length) {
+                  showMoreBtn.style.display = 'none';
+                  // Add Show Less button
+                  const showLessBtn = document.createElement('button');
+                  showLessBtn.className = 'show-more-btn';
+                  showLessBtn.textContent = 'Show Less';
+                  showLessBtn.onclick = showLessUnits;
+                  showMoreBtn.parentNode.appendChild(showLessBtn);
+              }
+          }
+
+          function showLessUnits() {
+              const unitTbody = document.getElementById('unitTableBody');
+              const extraRows = unitTbody.querySelectorAll('.extra-row');
+              extraRows.forEach(row => row.remove());
+              unitCurrentIndex = 4;
+              document.querySelector('[onclick="showMoreUnits()"]').style.display = 'inline-block';
+              this.remove(); // Remove the Show Less button
+          }
+
+          function showMoreFaculties() {
+              const facultyTbody = document.getElementById('facultyTableBody');
+              const showMoreBtn = document.querySelector('[onclick="showMoreFaculties()"]');
+              
+              for(let i = facultyCurrentIndex; i < Math.min(facultyCurrentIndex + ITEMS_PER_LOAD, initialData.faculties.length); i++) {
+                  const faculty = initialData.faculties[i];
+                  const row = `
+                      <tr class="extra-row">
+                          <td>${faculty.code}</td>
+                          <td>${faculty.name}</td>
+                          <td>${faculty.total_courses || 0}</td>
+                          <td>${faculty.total_students || 0}</td>
+                          <td>${faculty.total_lectures || 0}</td>
+                          <td>${faculty.dateCreated ? new Date(faculty.dateCreated).toLocaleDateString() : 'N/A'}</td>
+                          <td><a href="#" class="delete-btn">❌</a></td>
+                      </tr>
+                  `;
+                  facultyTbody.insertAdjacentHTML('beforeend', row);
+              }
+              
+              facultyCurrentIndex += ITEMS_PER_LOAD;
+              if (facultyCurrentIndex >= initialData.faculties.length) {
+                  showMoreBtn.style.display = 'none';
+                  // Add Show Less button
+                  const showLessBtn = document.createElement('button');
+                  showLessBtn.className = 'show-more-btn';
+                  showLessBtn.textContent = 'Show Less';
+                  showLessBtn.onclick = showLessFaculties;
+                  showMoreBtn.parentNode.appendChild(showLessBtn);
+              }
+          }
+
+          function showLessFaculties() {
+              const facultyTbody = document.getElementById('facultyTableBody');
+              const extraRows = facultyTbody.querySelectorAll('.extra-row');
+              extraRows.forEach(row => row.remove());
+              facultyCurrentIndex = 4;
+              document.querySelector('[onclick="showMoreFaculties()"]').style.display = 'inline-block';
+              this.remove(); // Remove the Show Less button
+          }
+
+          // Add this function to update overview counts
+          function updateCardCounts() {
+              fetch('/get_overview_counts')
+                  .then(response => response.json())
+                  .then(data => {
+                      console.log('Received counts:', data);
+                      document.getElementById('courseCount').textContent = data.total_courses;
+                      document.getElementById('unitCount').textContent = data.total_units;
+                      document.getElementById('facultyCount').textContent = data.total_faculties;
+                  })
+                  .catch(error => {
+                      console.error('Error updating counts:', error);
+                  });
+          }
+
+          // Add this to ensure counts are updated when page loads
+          document.addEventListener('DOMContentLoaded', function() {
+              updateCardCounts();
+          });
+
+          // Update the refreshPageData function
+          function refreshPageData() {
+              fetch('/get_overview_counts')
+                  .then(response => response.json())
+                  .then(data => {
+                      console.log('Received counts:', data); // Debug log
+                      
+                      // Update the counts in the cards
+                      const courseCount = document.querySelector('.overview-card:nth-child(1) h2');
+                      const unitCount = document.querySelector('.overview-card:nth-child(2) h2');
+                      const facultyCount = document.querySelector('.overview-card:nth-child(3) h2');
+                      
+                      if (courseCount) courseCount.textContent = data.total_courses;
+                      if (unitCount) unitCount.textContent = data.total_units;
+                      if (facultyCount) facultyCount.textContent = data.total_faculties;
+                  })
+                  .catch(error => {
+                      console.error('Error updating counts:', error);
+                  });
+          }
+
+          // Update the addCourse function
+          function addCourse() {
+              const courseName = document.getElementById('courseName').value;
+              const courseCode = document.getElementById('courseCode').value;
+              const faculty = document.getElementById('faculty').value;
+
+              console.log('Adding course:', {
+                  courseName,
+                  courseCode,
+                  faculty
+              }); // Debug log
+
+              if (!courseName || !courseCode || !faculty) {
+                  alert('Please fill in all fields');
+                  return;
+              }
+
+              fetch('/add_course', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      courseName: courseName,
+                      courseCode: courseCode,
+                      faculty: faculty
+                  })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      alert('Course added successfully!');
+                      closeModal('addCourseModal');
+                      // Clear form
+                      document.getElementById('courseName').value = '';
+                      document.getElementById('courseCode').value = '';
+                      document.getElementById('faculty').value = '';
+                      // Refresh the page to show new data
+                      window.location.reload();
+                  } else {
+                      alert('Error: ' + (data.message || 'Failed to add course'));
+                  }
+              })
+              .catch(error => {
+                  console.error('Error:', error);
+                  alert('Error adding course: ' + error.message);
+              });
+          }
+
+          // Update the addUnit function
+          function addUnit() {
+              const unitCode = document.getElementById('unitCode').value;
+              const unitName = document.getElementById('unitName').value;
+              const courseSelect = document.getElementById('course');
+              const courseId = courseSelect.value;
+
+              console.log('Adding unit with values:', {
+                  unitCode,
+                  unitName,
+                  courseId
+              }); // Debug log
+
+              if (!unitCode || !unitName || !courseId) {
+                  alert('Please fill in all fields');
+                  return;
+              }
+
+              fetch('/add_unit', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      unitCode: unitCode,
+                      unitName: unitName,
+                      courseId: courseId  // This should be the course code
+                  })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      alert('Unit added successfully!');
+                      closeModal('addUnitModal');
+                      // Clear form
+                      document.getElementById('unitCode').value = '';
+                      document.getElementById('unitName').value = '';
+                      document.getElementById('course').value = '';
+                      // Force page refresh to update all data
+                      window.location.reload();
+                  } else {
+                      alert('Error: ' + (data.message || 'Failed to add unit'));
+                  }
+              })
+              .catch(error => {
+                  console.error('Error:', error);
+                  alert('Error adding unit: ' + error.message);
+              });
+          }
+
+          // Call refreshPageData when the page loads
+          document.addEventListener('DOMContentLoaded', function() {
+              refreshPageData();
+              // Refresh counts every 5 seconds
+              setInterval(refreshPageData, 5000);
+          });
+
+          // Add this function to load courses for the unit modal
+          function loadCoursesForUnit() {
+              const courseSelect = document.getElementById('course');
+              console.log('Loading courses...'); // Debug log
+              
+              fetch('/get_courses_list')  // Updated route name
+                  .then(response => response.json())
+                  .then(courses => {
+                      console.log('Received courses:', courses); // Debug log
+                      courseSelect.innerHTML = '<option value="">Select Course</option>';
+                      
+                      if (Array.isArray(courses) && courses.length > 0) {
+                          courses.forEach(course => {
+                              const option = document.createElement('option');
+                              option.value = course.courseCode;
+                              option.textContent = `${course.name} (${course.courseCode})`;
+                              courseSelect.appendChild(option);
+                          });
+                      } else {
+                          const option = document.createElement('option');
+                          option.value = "";
+                          option.textContent = "No courses available";
+                          courseSelect.appendChild(option);
+                      }
+                  })
+                  .catch(error => {
+                      console.error('Error loading courses:', error);
+                      courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+                  });
+          }
+
+          // Make sure this function is called when the modal opens
+          function openAddUnitModal() {
+              openModal('addUnitModal');
+              loadCoursesForUnit(); // Load courses when modal opens
+          }
+
+          // Add event listener for the Add Unit button
+          document.addEventListener('DOMContentLoaded', function() {
+              const addUnitBtn = document.querySelector('[onclick="openModal(\'addUnitModal\')"]');
+              if (addUnitBtn) {
+                  addUnitBtn.addEventListener('click', function() {
+                      loadCoursesForUnit();
+                  });
+              }
+          });
+
+          // Add this function to load courses for student registration
+          function loadCoursesForStudent() {
+              const courseSelect = document.getElementById('course');
+              console.log('Loading courses for student registration...'); // Debug log
+              
+              fetch('/get_courses_for_student')
+                  .then(response => response.json())
+                  .then(courses => {
+                      console.log('Received courses:', courses); // Debug log
+                      courseSelect.innerHTML = '<option value="">Select Course</option>';
+                      
+                      if (Array.isArray(courses) && courses.length > 0) {
+                          courses.forEach(course => {
+                              const option = document.createElement('option');
+                              option.value = course.courseCode;
+                              option.textContent = `${course.name} (${course.courseCode})`;
+                              courseSelect.appendChild(option);
+                          });
+                      } else {
+                          const option = document.createElement('option');
+                          option.value = "";
+                          option.textContent = "No courses available";
+                          courseSelect.appendChild(option);
+                      }
+                  })
+                  .catch(error => {
+                      console.error('Error loading courses:', error);
+                      courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+                  });
+          }
+
+          // Update the openAddStudentModal function
+          function openAddStudentModal() {
+              openModal('addStudentModal');
+              loadCoursesForStudent(); // Load courses when modal opens
+          }
+
+          // Add event listener for the Add Student button
+          document.addEventListener('DOMContentLoaded', function() {
+              const addStudentBtn = document.querySelector('[onclick="openModal(\'addStudentModal\')"]');
+              if (addStudentBtn) {
+                  addStudentBtn.addEventListener('click', function(e) {
+                      e.preventDefault();
+                      openAddStudentModal();
+                  });
+              }
+          });
+
+          document.addEventListener('click', function(e) {
+            if (e.target.closest('.delete-btn')) {
+                const btn = e.target.closest('.delete-btn');
+                const type = btn.getAttribute('data-type');
+                const id = btn.getAttribute('data-id');
+                let url, payload;
+                if (type === 'course') {
+                    url = '/delete_course';
+                    payload = { id: id };
+                } else if (type === 'unit') {
+                    url = '/delete_unit';
+                    payload = { unitCode: id };
+                } else if (type === 'faculty') {
+                    url = '/delete_faculty';
+                    payload = { code: id };
+                } else {
+                    return;
+                }
+                if (!confirm('Are you sure you want to delete this item?')) return;
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        btn.closest('tr').remove();
+                    } else {
+                        alert('Delete failed: ' + (data.message || 'Unknown error'));
+                    }
+                });
+            }
+          });
+
+        </script>
+      </body>
+    </html>
+  </body>
+</html>
