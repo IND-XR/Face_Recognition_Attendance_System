@@ -223,11 +223,34 @@ def bring_window_to_front(window_name):
     return False
 
 
-# Initialize video capture
-cap = cv2.VideoCapture(1)
-if not cap.isOpened():
-    print("Error: Could not open video capture")
-    exit()
+# Initialize video capture - try multiple methods
+print("Attempting to initialize camera...")
+cap = None
+
+# Method 1: Try DirectShow (Windows)
+for camera_index in [0, 1]:
+    cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+    if cap is not None and cap.isOpened():
+        print(f"Successfully opened camera {camera_index} using DirectShow")
+        ret, test_frame = cap.read()
+        if ret:
+            break
+        cap.release()
+
+# Method 2: Try default backend if DirectShow failed
+if cap is None or not cap.isOpened():
+    for camera_index in [0, 1]:
+        cap = cv2.VideoCapture(camera_index)
+        if cap is not None and cap.isOpened():
+            print(f"Successfully opened camera {camera_index} using default backend")
+            ret, test_frame = cap.read()
+            if ret:
+                break
+            cap.release()
+
+if cap is None or not cap.isOpened():
+    print("Error: Could not open any camera. Please ensure your camera is connected and not in use by another application.")
+    exit(1)
 
 # Create named window with specific properties
 window_name = 'Face Recognition'

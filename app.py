@@ -1140,7 +1140,7 @@ def export_attendance_excel():
     ws.title = "Attendance"
 
     # 1. University name at the top (centered and bold)
-    university_name = "South Eastern University of Sri Lanka"
+    university_name = "Attendance System"
     ws.merge_cells('A1:C1')  # Adjust range if you have more columns
     ws['A1'] = university_name
     ws['A1'].font = Font(size=16, bold=True)

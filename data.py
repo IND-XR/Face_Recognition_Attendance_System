@@ -28,15 +28,15 @@ def capture_student_image(course, reg_number):
         # Create folders if they don't exist
         os.makedirs(folder_path, exist_ok=True)
         
-        # Try different camera indices
+        # Try different camera indices (0 and 1)
         cap = None
-        for camera_index in [1]:
-            cap = cv2.VideoCapture(camera_index)
-            if cap.isOpened():
+        for camera_index in [0, 1]:
+            temp_cap = cv2.VideoCapture(camera_index)
+            if temp_cap.isOpened():
+                cap = temp_cap
                 print(f"Using camera {camera_index}")
                 break
-            cap.release()
-            
+            temp_cap.release()
         if cap is None or not cap.isOpened():
             return False, "Failed to access camera.", None
         
